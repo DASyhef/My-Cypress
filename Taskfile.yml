@@ -1,0 +1,85 @@
+version: '3'
+
+tasks:
+  setup:
+    desc: "Vérifie et installe les prérequis système"
+    cmds:
+      - task: setup-posix
+      - task: setup-windows
+
+  setup-posix:
+    platforms: [linux, darwin]
+    cmds:
+      - bash ./scripts/setup.sh
+
+  setup-windows:
+    platforms: [windows]
+    cmds:
+      - powershell -ExecutionPolicy Bypass -File ./scripts/setup.ps1
+
+  get:
+    desc: "Récupère les dépendances Flutter"
+    cmds:
+      - flutter pub get
+
+  run:
+    desc: "Démarre l'émulateur et lance l'application sur toutes les cibles (Web + Mobile)"
+    deps: [launch-emulator]
+    cmds:
+      - task: run-all
+
+  launch-emulator:
+    desc: "Démarre l'émulateur selon l'OS"
+    cmds:
+      - task: launch-emulator-posix
+      - task: launch-emulator-windows
+
+  launch-emulator-posix:
+    platforms: [linux, darwin]
+    desc: "Démarre l'émulateur sous Linux / macOS"
+    cmds:
+      - |
+        EMU=$(flutter emulators | grep -E 'android|ios' | head -n 1 | awk '{print $1}')
+        if [ -n "$EMU" ]; then
+          echo "Démarrage de l'émulateur : $EMU"
+          flutter emulators --launch "$EMU"
+          if command -v adb &> /dev/null; then
+            echo "Attente du démarrage complet d'Android..."
+            adb wait-for-device
+            while [ "$(adb shell getprop sys.boot_completed 2>&1 | tr -d '\r')" != "1" ]; do
+              sleep 1
+            done
+          fi
+        else
+          echo "Aucun émulateur trouvé via flutter emulators."
+        fi
+
+  launch-emulator-windows:
+    platforms: [windows]
+    desc: "Démarre l'émulateur sous Windows"
+    cmds:
+      - powershell -ExecutionPolicy Bypass -Command "$emu = (flutter emulators | Select-String 'android').Line.Split(' ')[0]; if ($emu) { flutter emulators --launch $emu; adb wait-for-device } else { Write-Host 'Aucun émulateur trouvé.' }"
+
+  run-all:
+    deps:
+      - run-android
+      - run-web
+
+  run-android:
+    cmds:
+      - flutter run -d emulator-5554
+
+  run-web:
+    cmds:
+      - flutter run -d chrome
+
+  clean:
+    desc: "Nettoie les fichiers de build"
+    cmds:
+      - flutter clean
+      - flutter pub get
+
+  firebase-config:
+    desc: "Configure et lie l'application avec Firebase CLI"
+    cmds:
+      - flutterfire configure

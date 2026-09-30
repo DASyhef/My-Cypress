@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "463762864980",
+    "project_id": "gontran-52c4b",
+    "storage_bucket": "gontran-52c4b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:463762864980:android:28a950d20e40dd0f63e6c1",
+        "android_client_info": {
+          "package_name": "com.monprojet.gontran"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGYH2nIDx6YOzAXIgqgWtmuzL74B4XNBs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -59,13 +59,17 @@ class _AuthPageState extends State<AuthPage> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -78,13 +82,17 @@ class _AuthPageState extends State<AuthPage> {
     try {
       await _authService.signInWithGoogle();
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -97,13 +105,17 @@ class _AuthPageState extends State<AuthPage> {
     try {
       await _authService.signInWithApple();
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -118,20 +130,26 @@ class _AuthPageState extends State<AuthPage> {
     await _authService.verifyPhoneNumber(
       phoneNumber: _phoneController.text.trim(),
       verificationCompleted: (PhoneAuthCredential credential) async {
-        setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       },
       verificationFailed: (FirebaseAuthException e) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = e.message;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = e.message;
+          });
+        }
       },
       codeSent: (String verificationId, int? resendToken) {
-        setState(() {
-          _isLoading = false;
-          _verificationId = verificationId;
-          _codeSent = true;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _verificationId = verificationId;
+            _codeSent = true;
+          });
+        }
       },
       codeAutoRetrievalTimeout: (String verificationId) {
         _verificationId = verificationId;
@@ -153,13 +171,17 @@ class _AuthPageState extends State<AuthPage> {
         smsCode: _smsCodeController.text.trim(),
       );
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

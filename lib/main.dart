@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gontran/firebase_options.dart';
-import 'package:gontran/views/home_page.dart';
+import 'package:gontran/services/auth_service.dart';
+import 'package:gontran/views/auth_page.dart';
+import 'package:gontran/views/dashboard_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +20,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AuthService authService = AuthService();
+
     return MaterialApp(
       title: 'My-Cypress',
       theme: ThemeData(
@@ -39,7 +44,22 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomePage(),
+      home: StreamBuilder<User?>(
+        stream: authService.userState,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+          if (snapshot.hasData) {
+            return const DashboardPage();
+          }
+          return const AuthPage();
+        },
+      ),
     );
   }
 }

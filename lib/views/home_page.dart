@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gontran/services/auth_service.dart';
+import 'package:gontran/views/auth_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -70,6 +73,32 @@ class HomePage extends StatelessWidget {
                   height: 1.5,
                   color: theme.colorScheme.secondary,
                 ),
+              ),
+              const SizedBox(height: 40),
+              StreamBuilder<User?>(
+                stream: AuthService().userState,
+                builder: (context, snapshot) {
+                  final user = snapshot.data;
+                  if (user == null) {
+                    return ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AuthPage(),
+                          ),
+                        );
+                      },
+                      child: const Text('Se connecter'),
+                    );
+                  }
+                  return ElevatedButton(
+                    onPressed: () async {
+                      await AuthService().signOut();
+                    },
+                    child: const Text('Se déconnecter'),
+                  );
+                },
               ),
             ],
           ),

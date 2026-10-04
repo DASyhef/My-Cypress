@@ -12,7 +12,20 @@
           "package_name": "com.monprojet.gontran"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "463762864980-46vh3epbcff39rf03mgh9v1s3h3h50l7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.monprojet.gontran",
+            "certificate_hash": "02d94dcfdc910b2dfe68734814b8d538fc193a35"
+          }
+        },
+        {
+          "client_id": "463762864980-aokfcle4s3nolsmmbiiieve0hcam0ccr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCGYH2nIDx6YOzAXIgqgWtmuzL74B4XNBs"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "463762864980-aokfcle4s3nolsmmbiiieve0hcam0ccr.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "463762864980-i3u1m5e2k1k8oefgf4d78hon6ji77lm2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.monprojet.gontran"
+              }
+            }
+          ]
         }
       }
     }

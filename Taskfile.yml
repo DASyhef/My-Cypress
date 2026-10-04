@@ -1,5 +1,9 @@
 version: '3'
 
+vars:
+  WEB_PORT: '5000'
+  WEB_CLIENT_ID: '463762864980-aokfcle4s3nolsmmbiiieve0hcam0ccr.apps.googleusercontent.com'
+
 tasks:
   setup:
     desc: "Vérifie et installe les prérequis système"
@@ -71,7 +75,7 @@ tasks:
 
   run-web:
     cmds:
-      - flutter run -d chrome
+      - flutter run -d chrome --web-port={{.WEB_PORT}} --dart-define=WEB_CLIENT_ID={{.WEB_CLIENT_ID}}
 
   clean:
     desc: "Nettoie les fichiers de build"

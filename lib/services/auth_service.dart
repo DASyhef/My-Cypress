@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -5,6 +6,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   static const String _webClientId = String.fromEnvironment(
     'WEB_CLIENT_ID',
@@ -27,24 +29,73 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
+  Future<void> _handleUserRegistration(User user, {String? name}) async {
+    final userRef = _firestore.collection('users').doc(user.uid);
+    final doc = await userRef.get();
+
+    if (!doc.exists) {
+      await userRef.set({
+        'uid': user.uid,
+        'email': user.email ?? '',
+        'displayName': name ?? user.displayName ?? '',
+        'phoneNumber': user.phoneNumber ?? '',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
   Future<UserCredential> signUpWithEmail({
     required String email,
     required String password,
+    String? name,
   }) async {
-    return await _auth.createUserWithEmailAndPassword(
+    final credential = await _auth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
+    if (credential.user != null) {
+      try {
+        await _handleUserRegistration(credential.user!, name: name);
+      } catch (e) {
+        await _auth.signOut();
+        rethrow;
+      }
+    }
+    return credential;
   }
 
   Future<UserCredential> signInWithEmail({
     required String email,
     required String password,
   }) async {
-    return await _auth.signInWithEmailAndPassword(
+    final credential = await _auth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
+
+    if (credential.user != null) {
+      try {
+        final userRef = _firestore.collection('users').doc(credential.user!.uid);
+        final doc = await userRef.get();
+
+        if (!doc.exists) {
+          await _auth.signOut();
+          throw FirebaseAuthException(
+            code: 'user-not-registered',
+            message: 'Aucun compte associé à cet email. Veuillez d\'abord vous inscrire.',
+          );
+        }
+      } catch (e) {
+        await _auth.signOut();
+        if (e is FirebaseAuthException) rethrow;
+        throw FirebaseAuthException(
+          code: 'firestore-check-failed',
+          message: 'Erreur lors de la vérification du compte : $e',
+        );
+      }
+    }
+
+    return credential;
   }
 
   Future<void> sendPasswordResetEmail(String email) async {
@@ -58,27 +109,129 @@ class AuthService {
     }
   }
 
-  Future<UserCredential?> signInWithGoogle() async {
+  Future<UserCredential?> signUpWithGoogle() async {
+    UserCredential credential;
+
     if (kIsWeb) {
       final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-      return await _auth.signInWithPopup(googleProvider);
+      credential = await _auth.signInWithPopup(googleProvider);
+    } else {
+      await _ensureGoogleSignInInitialized();
+
+      final GoogleSignInAccount googleUser =
+          await GoogleSignIn.instance.authenticate();
+
+      final scopes = ['email', 'profile'];
+      final authorization =
+          await googleUser.authorizationClient.authorizeScopes(scopes);
+
+      final OAuthCredential oauthCredential = GoogleAuthProvider.credential(
+        accessToken: authorization.accessToken,
+        idToken: googleUser.authentication.idToken,
+      );
+
+      credential = await _auth.signInWithCredential(oauthCredential);
     }
 
-    await _ensureGoogleSignInInitialized();
+    if (credential.user != null) {
+      try {
+        await _handleUserRegistration(credential.user!);
+      } catch (e) {
+        await _auth.signOut();
+        if (!kIsWeb) {
+          await GoogleSignIn.instance.signOut();
+        }
+        rethrow;
+      }
+    }
 
-    final GoogleSignInAccount googleUser =
-        await GoogleSignIn.instance.authenticate();
+    return credential;
+  }
 
-    final scopes = ['email', 'profile'];
-    final authorization =
-        await googleUser.authorizationClient.authorizeScopes(scopes);
+  Future<UserCredential?> signInWithGoogle() async {
+    UserCredential credential;
 
-    final OAuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: authorization.accessToken,
-      idToken: googleUser.authentication.idToken,
+    if (kIsWeb) {
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      credential = await _auth.signInWithPopup(googleProvider);
+    } else {
+      await _ensureGoogleSignInInitialized();
+
+      final GoogleSignInAccount googleUser =
+          await GoogleSignIn.instance.authenticate();
+
+      final scopes = ['email', 'profile'];
+      final authorization =
+          await googleUser.authorizationClient.authorizeScopes(scopes);
+
+      final OAuthCredential oauthCredential = GoogleAuthProvider.credential(
+        accessToken: authorization.accessToken,
+        idToken: googleUser.authentication.idToken,
+      );
+
+      credential = await _auth.signInWithCredential(oauthCredential);
+    }
+
+    if (credential.user != null) {
+      try {
+        final userRef = _firestore.collection('users').doc(credential.user!.uid);
+        final doc = await userRef.get();
+
+        if (!doc.exists) {
+          await _auth.signOut();
+          if (!kIsWeb) {
+            await GoogleSignIn.instance.signOut();
+          }
+          throw FirebaseAuthException(
+            code: 'user-not-registered',
+            message: 'Aucun compte enregistré avec ce Google. Veuillez d\'abord vous inscrire.',
+          );
+        }
+      } catch (e) {
+        await _auth.signOut();
+        if (!kIsWeb) {
+          await GoogleSignIn.instance.signOut();
+        }
+        if (e is FirebaseAuthException) rethrow;
+        throw FirebaseAuthException(
+          code: 'firestore-check-failed',
+          message: 'Erreur lors de la vérification du compte : $e',
+        );
+      }
+    }
+
+    return credential;
+  }
+
+  Future<UserCredential> signUpWithApple() async {
+    final appleCredential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
     );
 
-    return await _auth.signInWithCredential(credential);
+    final OAuthProvider provider = OAuthProvider('apple.com');
+    final AuthCredential credential = provider.credential(
+      idToken: appleCredential.identityToken,
+      accessToken: appleCredential.authorizationCode,
+    );
+
+    final userCredential = await _auth.signInWithCredential(credential);
+
+    if (userCredential.user != null) {
+      try {
+        final name = [appleCredential.givenName, appleCredential.familyName]
+            .where((n) => n != null && n.isNotEmpty)
+            .join(' ');
+        await _handleUserRegistration(userCredential.user!, name: name.isNotEmpty ? name : null);
+      } catch (e) {
+        await _auth.signOut();
+        rethrow;
+      }
+    }
+
+    return userCredential;
   }
 
   Future<UserCredential> signInWithApple() async {
@@ -95,7 +248,31 @@ class AuthService {
       accessToken: appleCredential.authorizationCode,
     );
 
-    return await _auth.signInWithCredential(credential);
+    final userCredential = await _auth.signInWithCredential(credential);
+
+    if (userCredential.user != null) {
+      try {
+        final userRef = _firestore.collection('users').doc(userCredential.user!.uid);
+        final doc = await userRef.get();
+
+        if (!doc.exists) {
+          await _auth.signOut();
+          throw FirebaseAuthException(
+            code: 'user-not-registered',
+            message: 'Aucun compte enregistré avec Apple. Veuillez d\'abord vous inscrire.',
+          );
+        }
+      } catch (e) {
+        await _auth.signOut();
+        if (e is FirebaseAuthException) rethrow;
+        throw FirebaseAuthException(
+          code: 'firestore-check-failed',
+          message: 'Erreur lors de la vérification du compte : $e',
+        );
+      }
+    }
+
+    return userCredential;
   }
 
   Future<void> verifyPhoneNumber({
@@ -114,6 +291,28 @@ class AuthService {
     );
   }
 
+  Future<UserCredential> signUpWithSmsCode({
+    required String verificationId,
+    required String smsCode,
+  }) async {
+    final AuthCredential credential = PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: smsCode,
+    );
+    final userCredential = await _auth.signInWithCredential(credential);
+
+    if (userCredential.user != null) {
+      try {
+        await _handleUserRegistration(userCredential.user!);
+      } catch (e) {
+        await _auth.signOut();
+        rethrow;
+      }
+    }
+
+    return userCredential;
+  }
+
   Future<UserCredential> signInWithSmsCode({
     required String verificationId,
     required String smsCode,
@@ -122,7 +321,31 @@ class AuthService {
       verificationId: verificationId,
       smsCode: smsCode,
     );
-    return await _auth.signInWithCredential(credential);
+    final userCredential = await _auth.signInWithCredential(credential);
+
+    if (userCredential.user != null) {
+      try {
+        final userRef = _firestore.collection('users').doc(userCredential.user!.uid);
+        final doc = await userRef.get();
+
+        if (!doc.exists) {
+          await _auth.signOut();
+          throw FirebaseAuthException(
+            code: 'user-not-registered',
+            message: 'Aucun compte enregistré avec ce numéro. Veuillez d\'abord vous inscrire.',
+          );
+        }
+      } catch (e) {
+        await _auth.signOut();
+        if (e is FirebaseAuthException) rethrow;
+        throw FirebaseAuthException(
+          code: 'firestore-check-failed',
+          message: 'Erreur lors de la vérification du compte : $e',
+        );
+      }
+    }
+
+    return userCredential;
   }
 
   Future<void> signOut() async {

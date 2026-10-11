@@ -10,6 +10,7 @@ class AuthPage extends StatefulWidget {
 }
 
 enum AuthMode { email, phone }
+enum AuthAction { login, register }
 
 class _AuthPageState extends State<AuthPage> {
   final AuthService _authService = AuthService();
@@ -17,10 +18,11 @@ class _AuthPageState extends State<AuthPage> {
   final _phoneFormKey = GlobalKey<FormState>();
 
   AuthMode _authMode = AuthMode.email;
-  bool _isSignUp = false;
+  AuthAction _authAction = AuthAction.login;
   bool _isLoading = false;
   String? _errorMessage;
 
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -32,6 +34,7 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
@@ -47,10 +50,11 @@ class _AuthPageState extends State<AuthPage> {
     });
 
     try {
-      if (_isSignUp) {
+      if (_authAction == AuthAction.register) {
         await _authService.signUpWithEmail(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
+          name: _nameController.text.trim(),
         );
       } else {
         await _authService.signInWithEmail(
@@ -73,14 +77,18 @@ class _AuthPageState extends State<AuthPage> {
     }
   }
 
-  Future<void> _handleGoogleSignIn() async {
+  Future<void> _handleGoogleAuth() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      await _authService.signInWithGoogle();
+      if (_authAction == AuthAction.register) {
+        await _authService.signUpWithGoogle();
+      } else {
+        await _authService.signInWithGoogle();
+      }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         setState(() {
@@ -96,14 +104,18 @@ class _AuthPageState extends State<AuthPage> {
     }
   }
 
-  Future<void> _handleAppleSignIn() async {
+  Future<void> _handleAppleAuth() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      await _authService.signInWithApple();
+      if (_authAction == AuthAction.register) {
+        await _authService.signUpWithApple();
+      } else {
+        await _authService.signInWithApple();
+      }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         setState(() {
@@ -166,10 +178,17 @@ class _AuthPageState extends State<AuthPage> {
     });
 
     try {
-      await _authService.signInWithSmsCode(
-        verificationId: _verificationId!,
-        smsCode: _smsCodeController.text.trim(),
-      );
+      if (_authAction == AuthAction.register) {
+        await _authService.signUpWithSmsCode(
+          verificationId: _verificationId!,
+          smsCode: _smsCodeController.text.trim(),
+        );
+      } else {
+        await _authService.signInWithSmsCode(
+          verificationId: _verificationId!,
+          smsCode: _smsCodeController.text.trim(),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         setState(() {
@@ -206,9 +225,9 @@ class _AuthPageState extends State<AuthPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _authMode == AuthMode.email
-                      ? (_isSignUp ? 'Créer un compte' : 'Connexion')
-                      : 'Connexion par téléphone',
+                  _authAction == AuthAction.login
+                      ? 'Connexion'
+                      : 'Créer un compte',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium,
                 ),
@@ -224,6 +243,37 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                   const SizedBox(height: 16),
                 ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Se connecter'),
+                      selected: _authAction == AuthAction.login,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _authAction = AuthAction.login;
+                            _errorMessage = null;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('S\'inscrire'),
+                      selected: _authAction == AuthAction.register,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _authAction = AuthAction.register;
+                            _errorMessage = null;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -264,18 +314,26 @@ class _AuthPageState extends State<AuthPage> {
                   const Center(child: CircularProgressIndicator())
                 else ...[
                   OutlinedButton.icon(
-                    onPressed: _handleGoogleSignIn,
+                    onPressed: _handleGoogleAuth,
                     icon: const Icon(Icons.g_mobiledata, size: 28),
-                    label: const Text('Continuer avec Google'),
+                    label: Text(
+                      _authAction == AuthAction.login
+                          ? 'Se connecter avec Google'
+                          : 'S\'inscrire avec Google',
+                    ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
                     ),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: _handleAppleSignIn,
+                    onPressed: _handleAppleAuth,
                     icon: const Icon(Icons.apple, size: 24),
-                    label: const Text('Continuer avec Apple'),
+                    label: Text(
+                      _authAction == AuthAction.login
+                          ? 'Se connecter avec Apple'
+                          : 'S\'inscrire avec Apple',
+                    ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
                     ),
@@ -294,6 +352,22 @@ class _AuthPageState extends State<AuthPage> {
       key: _emailFormKey,
       child: Column(
         children: [
+          if (_authAction == AuthAction.register) ...[
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Nom',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Saisissez votre nom';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -331,19 +405,8 @@ class _AuthPageState extends State<AuthPage> {
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: Colors.white,
             ),
-            child: Text(_isSignUp ? 'S\'inscrire' : 'Se connecter'),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _isSignUp = !_isSignUp;
-                _errorMessage = null;
-              });
-            },
             child: Text(
-              _isSignUp
-                  ? 'Déjà un compte ? Se connecter'
-                  : 'Pas de compte ? S\'inscrire',
+              _authAction == AuthAction.login ? 'Se connecter' : 'S\'inscrire',
             ),
           ),
         ],

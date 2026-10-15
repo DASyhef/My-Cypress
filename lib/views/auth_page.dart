@@ -226,16 +226,19 @@ class _AuthPageState extends State<AuthPage> {
                 const SizedBox(height: 8),
                 Text(
                   _authAction == AuthAction.login
-                      ? 'Connexion'
-                      : 'Créer un compte',
+                      ? 'Connexion à votre espace'
+                      : 'Création de compte',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 if (_errorMessage != null) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
-                    color: Colors.red.shade100,
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Text(
                       _errorMessage!,
                       style: TextStyle(color: Colors.red.shade900),
@@ -243,70 +246,27 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                   const SizedBox(height: 16),
                 ],
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Se connecter'),
-                      selected: _authAction == AuthAction.login,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _authAction = AuthAction.login;
-                            _errorMessage = null;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('S\'inscrire'),
-                      selected: _authAction == AuthAction.register,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _authAction = AuthAction.register;
-                            _errorMessage = null;
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
+                if (_authMode == AuthMode.email)
+                  _buildEmailForm(theme)
+                else
+                  _buildPhoneForm(theme),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Email'),
-                      selected: _authMode == AuthMode.email,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _authMode = AuthMode.email;
-                            _errorMessage = null;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('Téléphone'),
-                      selected: _authMode == AuthMode.phone,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _authMode = AuthMode.phone;
-                            _errorMessage = null;
-                          });
-                        }
-                      },
-                    ),
-                  ],
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _authMode = _authMode == AuthMode.email
+                          ? AuthMode.phone
+                          : AuthMode.email;
+                      _errorMessage = null;
+                      _codeSent = false;
+                    });
+                  },
+                  child: Text(
+                    _authMode == AuthMode.email
+                        ? 'Utiliser plutôt le numéro de téléphone'
+                        : 'Utiliser plutôt l\'e-mail',
+                  ),
                 ),
-                const SizedBox(height: 24),
-                if (_authMode == AuthMode.email) _buildEmailForm(theme),
-                if (_authMode == AuthMode.phone) _buildPhoneForm(theme),
                 const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 16),
@@ -318,7 +278,7 @@ class _AuthPageState extends State<AuthPage> {
                     icon: const Icon(Icons.g_mobiledata, size: 28),
                     label: Text(
                       _authAction == AuthAction.login
-                          ? 'Se connecter avec Google'
+                          ? 'Continuer avec Google'
                           : 'S\'inscrire avec Google',
                     ),
                     style: OutlinedButton.styleFrom(
@@ -331,7 +291,7 @@ class _AuthPageState extends State<AuthPage> {
                     icon: const Icon(Icons.apple, size: 24),
                     label: Text(
                       _authAction == AuthAction.login
-                          ? 'Se connecter avec Apple'
+                          ? 'Continuer avec Apple'
                           : 'S\'inscrire avec Apple',
                     ),
                     style: OutlinedButton.styleFrom(
@@ -339,6 +299,32 @@ class _AuthPageState extends State<AuthPage> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _authAction == AuthAction.login
+                          ? 'Pas encore de compte ?'
+                          : 'Déjà un compte ?',
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _authAction = _authAction == AuthAction.login
+                              ? AuthAction.register
+                              : AuthAction.login;
+                          _errorMessage = null;
+                        });
+                      },
+                      child: Text(
+                        _authAction == AuthAction.login
+                            ? 'S\'inscrire'
+                            : 'Se connecter',
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

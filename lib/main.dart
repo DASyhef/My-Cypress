@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gontran/firebase_options.dart';
 import 'package:gontran/services/auth_service.dart';
 import 'package:gontran/views/auth_page.dart';
 import 'package:gontran/views/dashboard_page.dart';
-import 'package:gontran/views/home_page.dart';
+import 'package:gontran/views/profile_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,26 +23,38 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AuthService authService = AuthService();
+    final primaryColor = const Color(0xFF2D4B3E);
+    final secondaryColor = const Color(0xFF4A6B5D);
 
     return MaterialApp(
       title: 'My-Cypress',
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFE2F0D9),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2D4B3E),
-          primary: const Color(0xFF2D4B3E),
-          secondary: const Color(0xFF4A6B5D),
+          seedColor: primaryColor,
+          primary: primaryColor,
+          secondary: secondaryColor,
         ),
         textTheme: TextTheme(
           headlineMedium: GoogleFonts.montserrat(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF2D4B3E),
+            color: primaryColor,
           ),
           bodyMedium: GoogleFonts.lora(
             fontSize: 14,
             fontStyle: FontStyle.italic,
-            color: const Color(0xFF4A6B5D),
+            color: secondaryColor,
+          ),
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size.fromHeight(50),
+            backgroundColor: primaryColor,
+            foregroundColor: Colors.white,
           ),
         ),
       ),
@@ -55,10 +68,35 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
-          if (snapshot.hasData) {
-            return const DashboardPage();
+          final user = snapshot.data;
+          if (user == null) {
+            return const AuthPage();
           }
-          return const HomePage();
+
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+            builder: (context, docSnapshot) {
+              if (docSnapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+
+              if (docSnapshot.hasData && docSnapshot.data!.exists) {
+                final data = docSnapshot.data!.data() as Map<String, dynamic>?;
+                final lastName = data?['lastName'] ?? '';
+                final firstName = data?['firstName'] ?? '';
+
+                if (lastName.isEmpty || firstName.isEmpty) {
+                  return const ProfilePage();
+                }
+              }
+
+              return const DashboardPage();
+            },
+          );
         },
       ),
     );

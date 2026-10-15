@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gontran/services/auth_service.dart';
+import 'package:gontran/views/profile_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -48,7 +49,14 @@ class DashboardPage extends StatelessWidget {
                     context,
                     title: 'Profil',
                     icon: Icons.person,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfilePage(),
+                        ),
+                      );
+                    },
                   ),
                   _buildCard(
                     context,

@@ -63,11 +63,6 @@ class _AuthPageState extends State<AuthPage> {
       if (mounted) {
         setState(() {
           _errorMessage = e.message;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
           _isLoading = false;
         });
       }
@@ -90,11 +85,6 @@ class _AuthPageState extends State<AuthPage> {
       if (mounted) {
         setState(() {
           _errorMessage = e.message;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
           _isLoading = false;
         });
       }
@@ -117,11 +107,6 @@ class _AuthPageState extends State<AuthPage> {
       if (mounted) {
         setState(() {
           _errorMessage = e.message;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
           _isLoading = false;
         });
       }
@@ -190,11 +175,6 @@ class _AuthPageState extends State<AuthPage> {
       if (mounted) {
         setState(() {
           _errorMessage = e.message;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
           _isLoading = false;
         });
       }
@@ -278,9 +258,6 @@ class _AuthPageState extends State<AuthPage> {
                           ? 'Continuer avec Google'
                           : 'S\'inscrire avec Google',
                     ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                    ),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
@@ -290,9 +267,6 @@ class _AuthPageState extends State<AuthPage> {
                       _authAction == AuthAction.login
                           ? 'Continuer avec Apple'
                           : 'S\'inscrire avec Apple',
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
                     ),
                   ),
                 ],
@@ -338,10 +312,7 @@ class _AuthPageState extends State<AuthPage> {
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              border: OutlineInputBorder(),
-            ),
+            decoration: const InputDecoration(labelText: 'Email'),
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Saisissez un email valide';
@@ -353,10 +324,7 @@ class _AuthPageState extends State<AuthPage> {
           TextFormField(
             controller: _passwordController,
             obscureText: true,
-            decoration: const InputDecoration(
-              labelText: 'Mot de passe',
-              border: OutlineInputBorder(),
-            ),
+            decoration: const InputDecoration(labelText: 'Mot de passe'),
             validator: (value) {
               if (value == null || value.length < 6) {
                 return 'Le mot de passe doit faire au moins 6 caractères';
@@ -367,11 +335,6 @@ class _AuthPageState extends State<AuthPage> {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _isLoading ? null : _submitEmail,
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-            ),
             child: Text(
               _authAction == AuthAction.login ? 'Se connecter' : 'S\'inscrire',
             ),
@@ -392,7 +355,6 @@ class _AuthPageState extends State<AuthPage> {
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
                 labelText: 'Numéro de téléphone (+33...)',
-                border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -404,11 +366,6 @@ class _AuthPageState extends State<AuthPage> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _isLoading ? null : _verifyPhone,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: Colors.white,
-              ),
               child: const Text('Envoyer le code SMS'),
             ),
           ] else ...[
@@ -417,7 +374,6 @@ class _AuthPageState extends State<AuthPage> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Code de vérification SMS',
-                border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -429,11 +385,6 @@ class _AuthPageState extends State<AuthPage> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _isLoading ? null : _submitSmsCode,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: Colors.white,
-              ),
               child: const Text('Valider le code'),
             ),
             TextButton(

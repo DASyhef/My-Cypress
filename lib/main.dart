@@ -6,6 +6,7 @@ import 'package:gontran/firebase_options.dart';
 import 'package:gontran/services/auth_service.dart';
 import 'package:gontran/views/auth_page.dart';
 import 'package:gontran/views/dashboard_page.dart';
+import 'package:gontran/views/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,7 +58,7 @@ class MyApp extends StatelessWidget {
           if (snapshot.hasData) {
             return const DashboardPage();
           }
-          return const AuthPage();
+          return const HomePage();
         },
       ),
     );

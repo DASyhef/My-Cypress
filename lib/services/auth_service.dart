@@ -29,7 +29,7 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
-  Future<void> _handleUserRegistration(User user, {String? name}) async {
+  Future<void> _handleUserRegistration(User user) async {
     final userRef = _firestore.collection('users').doc(user.uid);
     final doc = await userRef.get();
 
@@ -37,8 +37,14 @@ class AuthService {
       await userRef.set({
         'uid': user.uid,
         'email': user.email ?? '',
-        'displayName': name ?? user.displayName ?? '',
         'phoneNumber': user.phoneNumber ?? '',
+        'title': '',
+        'lastName': '',
+        'birthName': '',
+        'firstName': '',
+        'nickname': '',
+        'birthDate': '',
+        'country': '',
         'createdAt': FieldValue.serverTimestamp(),
       });
     }
@@ -47,7 +53,6 @@ class AuthService {
   Future<UserCredential> signUpWithEmail({
     required String email,
     required String password,
-    String? name,
   }) async {
     final credential = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -55,7 +60,7 @@ class AuthService {
     );
     if (credential.user != null) {
       try {
-        await _handleUserRegistration(credential.user!, name: name);
+        await _handleUserRegistration(credential.user!);
       } catch (e) {
         await _auth.signOut();
         rethrow;
@@ -221,10 +226,7 @@ class AuthService {
 
     if (userCredential.user != null) {
       try {
-        final name = [appleCredential.givenName, appleCredential.familyName]
-            .where((n) => n != null && n.isNotEmpty)
-            .join(' ');
-        await _handleUserRegistration(userCredential.user!, name: name.isNotEmpty ? name : null);
+        await _handleUserRegistration(userCredential.user!);
       } catch (e) {
         await _auth.signOut();
         rethrow;

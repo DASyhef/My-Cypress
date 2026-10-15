@@ -22,7 +22,6 @@ class _AuthPageState extends State<AuthPage> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -34,7 +33,6 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
@@ -54,7 +52,6 @@ class _AuthPageState extends State<AuthPage> {
         await _authService.signUpWithEmail(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
-          name: _nameController.text.trim(),
         );
       } else {
         await _authService.signInWithEmail(
@@ -338,22 +335,6 @@ class _AuthPageState extends State<AuthPage> {
       key: _emailFormKey,
       child: Column(
         children: [
-          if (_authAction == AuthAction.register) ...[
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nom',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Saisissez votre nom';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,

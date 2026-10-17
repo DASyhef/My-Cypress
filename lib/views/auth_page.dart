@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gontran/models/auth_credentials.dart';
 import 'package:gontran/services/auth_service.dart';
 
 class AuthPage extends StatefulWidget {
@@ -42,6 +43,12 @@ class _AuthPageState extends State<AuthPage> {
 
   Future<void> _submitEmail() async {
     if (!_emailFormKey.currentState!.validate()) return;
+    
+    final credentials = EmailCredentials(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -50,13 +57,13 @@ class _AuthPageState extends State<AuthPage> {
     try {
       if (_authAction == AuthAction.register) {
         await _authService.signUpWithEmail(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: credentials.email,
+          password: credentials.password,
         );
       } else {
         await _authService.signInWithEmail(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: credentials.email,
+          password: credentials.password,
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -116,13 +123,15 @@ class _AuthPageState extends State<AuthPage> {
   Future<void> _verifyPhone() async {
     if (!_phoneFormKey.currentState!.validate()) return;
 
+    final phoneNumber = _phoneController.text.trim();
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     await _authService.verifyPhoneNumber(
-      phoneNumber: _phoneController.text.trim(),
+      phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
         if (mounted) {
           setState(() => _isLoading = false);
@@ -154,6 +163,11 @@ class _AuthPageState extends State<AuthPage> {
   Future<void> _submitSmsCode() async {
     if (_verificationId == null) return;
 
+    final credentials = PhoneCredentials(
+      phoneNumber: _phoneController.text.trim(),
+      smsCode: _smsCodeController.text.trim(),
+    );
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -163,12 +177,12 @@ class _AuthPageState extends State<AuthPage> {
       if (_authAction == AuthAction.register) {
         await _authService.signUpWithSmsCode(
           verificationId: _verificationId!,
-          smsCode: _smsCodeController.text.trim(),
+          smsCode: credentials.smsCode,
         );
       } else {
         await _authService.signInWithSmsCode(
           verificationId: _verificationId!,
-          smsCode: _smsCodeController.text.trim(),
+          smsCode: credentials.smsCode,
         );
       }
     } on FirebaseAuthException catch (e) {

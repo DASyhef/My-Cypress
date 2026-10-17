@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gontran/l10n/app_localizations.dart';
+import 'package:gontran/models/user_profile.dart';
 import 'package:gontran/services/auth_service.dart';
 import 'package:gontran/views/dashboard_page.dart';
+import 'package:gontran/views/trusted_persons.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -52,23 +55,23 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final doc = await _firestore.collection('users').doc(user.uid).get();
-      if (doc.exists && doc.data() != null) {
-        final data = doc.data()!;
+      if (doc.exists) {
+        final profile = UserProfile.fromMap(doc.data() ?? {});
         setState(() {
-          if (data['title'] != null && _titleOptions.contains(data['title'])) {
-            _title = data['title'];
+          if (_titleOptions.contains(profile.title)) {
+            _title = profile.title;
           }
-          _lastNameController.text = data['lastName'] ?? '';
-          _birthNameController.text = data['birthName'] ?? '';
-          _firstNameController.text = data['firstName'] ?? '';
-          _nicknameController.text = data['nickname'] ?? '';
-          _birthDateController.text = data['birthDate'] ?? '';
-          _countryController.text = data['country'] ?? '';
+          _lastNameController.text = profile.lastName;
+          _birthNameController.text = profile.birthName;
+          _firstNameController.text = profile.firstName;
+          _nicknameController.text = profile.nickname;
+          _birthDateController.text = profile.birthDate;
+          _countryController.text = profile.country;
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Erreur lors du chargement du profil : $e';
+        _errorMessage = '${AppLocalizations.of(context)!.profileLoadError} $e';
       });
     } finally {
       if (mounted) {
@@ -106,30 +109,48 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      await _firestore.collection('users').doc(user.uid).update({
-        'title': _title,
-        'lastName': _lastNameController.text.trim(),
-        'birthName': _birthNameController.text.trim(),
-        'firstName': _firstNameController.text.trim(),
-        'nickname': _nicknameController.text.trim(),
-        'birthDate': _birthDateController.text.trim(),
-        'country': _countryController.text.trim(),
-      });
+      final profile = UserProfile(
+        title: _title,
+        lastName: _lastNameController.text.trim(),
+        birthName: _birthNameController.text.trim(),
+        firstName: _firstNameController.text.trim(),
+        nickname: _nicknameController.text.trim(),
+        birthDate: _birthDateController.text.trim(),
+        country: _countryController.text.trim(),
+      );
+
+      await _firestore.collection('users').doc(user.uid).update(profile.toMap());
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('État civil enregistré avec succès')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.profileSaveSuccess)),
         );
-        // Redirection immédiate vers le dashboard après enregistrement
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DashboardPage()),
-        );
+
+        final trustedPersonsSnapshot = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('trusted_persons')
+            .limit(1)
+            .get();
+
+        if (mounted) {
+          if (trustedPersonsSnapshot.docs.isEmpty) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const TrustedPersons()),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const DashboardPage()),
+            );
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Erreur lors de la sauvegarde : $e';
+          _errorMessage = '${AppLocalizations.of(context)!.profileSaveError} $e';
         });
       }
     } finally {
@@ -143,6 +164,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -151,7 +174,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('État civil'),
+        title: Text(l10n.profilePageTitle),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -179,8 +202,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                   DropdownButtonFormField<String>(
                     value: _title,
-                    decoration: const InputDecoration(
-                      labelText: 'Titre',
+                    decoration: InputDecoration(
+                      labelText: l10n.titleLabel,
                     ),
                     items: _titleOptions.map((title) {
                       return DropdownMenuItem(
@@ -197,12 +220,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _lastNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nom *',
+                    decoration: InputDecoration(
+                      labelText: l10n.lastNameLabel,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Veuillez renseigner votre nom';
+                        return l10n.lastNameError;
                       }
                       return null;
                     },
@@ -210,19 +233,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _birthNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nom de naissance',
+                    decoration: InputDecoration(
+                      labelText: l10n.birthNameLabel,
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _firstNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Prénom(s) *',
+                    decoration: InputDecoration(
+                      labelText: l10n.firstNameLabel,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Veuillez renseigner votre prénom';
+                        return l10n.firstNameError;
                       }
                       return null;
                     },
@@ -230,15 +253,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _nicknameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Surnom',
+                    decoration: InputDecoration(
+                      labelText: l10n.nicknameLabel,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sensibilisation : Vos volontés ont une valeur légale et morale. '
-                    'Il est primordial d\'indiquer votre vraie identité pour éviter tout '
-                    'litige lors de leur exécution.',
+                    l10n.profileSensibilisationMessage,
                     style: TextStyle(
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
@@ -250,13 +271,13 @@ class _ProfilePageState extends State<ProfilePage> {
                     controller: _birthDateController,
                     readOnly: true,
                     onTap: _selectBirthDate,
-                    decoration: const InputDecoration(
-                      labelText: 'Date de naissance *',
-                      suffixIcon: Icon(Icons.calendar_today),
+                    decoration: InputDecoration(
+                      labelText: l10n.birthDateLabel,
+                      suffixIcon: const Icon(Icons.calendar_today),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Veuillez renseigner votre date de naissance';
+                        return l10n.birthDateError;
                       }
                       return null;
                     },
@@ -264,8 +285,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _countryController,
-                    decoration: const InputDecoration(
-                      labelText: 'Pays',
+                    decoration: InputDecoration(
+                      labelText: l10n.countryLabel,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -280,7 +301,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Enregistrer l\'état civil'),
+                        : Text(l10n.saveProfileButton),
                   ),
                 ],
               ),

@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'package:gontran/firebase_options.dart';
 import 'package:gontran/services/auth_service.dart';
 import 'package:gontran/views/auth_page.dart';
@@ -28,6 +30,16 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       title: 'My-Cypress',
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('fr'),
+      ],
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFE2F0D9),
         colorScheme: ColorScheme.fromSeed(

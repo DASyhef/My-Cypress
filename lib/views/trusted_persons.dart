@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gontran/l10n/app_localizations.dart';
+import 'package:gontran/services/auth_service.dart';
 import '../models/trusted_person.dart';
 
 class TrustedPersons extends StatefulWidget {
@@ -11,6 +13,68 @@ class TrustedPersons extends StatefulWidget {
 
 class _TrustedPersonsState extends State<TrustedPersons> {
   final List<TrustedPerson> _trustedPersons = [];
+  final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+  bool _isAdding = false;
+  bool _isLoading = true;
+  bool _isSaving = false;
+  String? _errorMessage;
+
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTrustedPersons();
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadTrustedPersons() async {
+    final user = _authService.currentUser;
+    if (user == null) {
+      print('DEBUG: _loadTrustedPersons - Utilisateur non connecté');
+      return;
+    }
+
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('trusted_persons')
+          .get();
+
+      setState(() {
+        _trustedPersons.clear();
+        for (var doc in snapshot.docs) {
+          _trustedPersons.add(TrustedPerson.fromJson(doc.data()));
+        }
+      });
+    } catch (e) {
+      print('DEBUG: _loadTrustedPersons - Erreur = $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   Color _getStatusColor(TrustedPersonStatus status) {
     switch (status) {
@@ -38,114 +102,108 @@ class _TrustedPersonsState extends State<TrustedPersons> {
     }
   }
 
-  void _showAddPersonDialog(BuildContext context, AppLocalizations l10n) {
-    final formKey = GlobalKey<FormState>();
-    final firstNameController = TextEditingController();
-    final lastNameController = TextEditingController();
-    final emailController = TextEditingController();
+  Future<void> _addPerson(AppLocalizations l10n) async {
+    if (!_formKey.currentState!.validate()) return;
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(l10n.addPersonTitle),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: firstNameController,
-                    decoration: InputDecoration(labelText: l10n.firstName),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.fieldRequired;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: lastNameController,
-                    decoration: InputDecoration(labelText: l10n.lastName),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.fieldRequired;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(labelText: l10n.email),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.fieldRequired;
-                      }
-                      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                      if (!emailRegex.hasMatch(value.trim())) {
-                        return l10n.invalidEmail;
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(l10n.cancel),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  setState(() {
-                    _trustedPersons.add(
-                      TrustedPerson(
-                        id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        firstName: firstNameController.text.trim(),
-                        lastName: lastNameController.text.trim(),
-                        email: emailController.text.trim(),
-                        status: TrustedPersonStatus.notSent,
-                      ),
-                    );
-                  });
-                  Navigator.of(dialogContext).pop();
-                }
-              },
-              child: Text(l10n.add),
-            ),
-          ],
-        );
-      },
+    final user = _authService.currentUser;
+    if (user == null) {
+      print('DEBUG: _addPerson - Utilisateur non connecté !');
+      return;
+    }
+
+    print('DEBUG: _addPerson - UID utilisateur = ${user.uid}');
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    final newPerson = TrustedPerson(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      email: _emailController.text.trim(),
+      status: TrustedPersonStatus.notSent,
     );
+
+    try {
+      print('DEBUG: Tentative d écriture Firestore...');
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('trusted_persons')
+          .doc(newPerson.id)
+          .set(newPerson.toJson());
+      print('DEBUG: Écriture Firestore réussie !');
+
+      if (mounted) {
+        setState(() {
+          _trustedPersons.add(newPerson);
+          _firstNameController.clear();
+          _lastNameController.clear();
+          _emailController.clear();
+          _formKey.currentState!.reset();
+          _isAdding = false;
+        });
+      }
+    } catch (e) {
+      print('DEBUG: Erreur Firestore = $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.trustedPersonsTitle),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_errorMessage != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Colors.red.shade900),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             Text(
               l10n.trustedPersonsDescription,
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
+            if (_trustedPersons.isNotEmpty) ...[
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: _trustedPersons.length,
                 itemBuilder: (context, index) {
                   final person = _trustedPersons[index];
@@ -169,12 +227,96 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                   );
                 },
               ),
-            ),
-            if (_trustedPersons.length < 3)
+              const SizedBox(height: 16),
+            ],
+            if (!_isAdding && _trustedPersons.length < 3) ...[
               ElevatedButton(
-                onPressed: () => _showAddPersonDialog(context, l10n),
+                onPressed: () {
+                  setState(() {
+                    _isAdding = true;
+                  });
+                },
                 child: Text(l10n.addTrustedPerson),
               ),
+            ] else if (_isAdding) ...[
+              Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          l10n.addPersonTitle,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            setState(() {
+                              _isAdding = false;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _firstNameController,
+                      decoration: InputDecoration(labelText: l10n.firstName),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return l10n.fieldRequired;
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _lastNameController,
+                      decoration: InputDecoration(labelText: l10n.lastName),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return l10n.fieldRequired;
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(labelText: l10n.email),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return l10n.fieldRequired;
+                        }
+                        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                        if (!emailRegex.hasMatch(value.trim())) {
+                          return l10n.invalidEmail;
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _isSaving ? null : () => _addPerson(l10n),
+                      child: _isSaving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(l10n.addTrustedPerson),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

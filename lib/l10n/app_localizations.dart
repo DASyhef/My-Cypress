@@ -319,6 +319,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter a valid email'**
   String get invalidEmail;
+
+  /// No description provided for @editPersonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit contact'**
+  String get editPersonTitle;
+
+  /// No description provided for @confirmDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm deletion'**
+  String get confirmDeleteTitle;
+
+  /// No description provided for @confirmDeleteContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you really want to delete this trusted person?'**
+  String get confirmDeleteContent;
+
+  /// No description provided for @cancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelButton;
+
+  /// No description provided for @deleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteButton;
+
+  /// No description provided for @saveChangesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get saveChangesButton;
+
+  /// No description provided for @sendButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get sendButton;
+
+  /// No description provided for @invitationEmailBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello {firstName},\n\nYou have been designated as a trusted person on My-Cypress.\n\nYou can download the app or log in online here: {appUrl}'**
+  String invitationEmailBody(String firstName, String appUrl);
 }
 
 class _AppLocalizationsDelegate

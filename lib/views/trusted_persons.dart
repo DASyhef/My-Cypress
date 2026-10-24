@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gontran/l10n/app_localizations.dart';
 import 'package:gontran/services/auth_service.dart';
+import 'package:gontran/services/email_service.dart';
+import 'package:gontran/theme/app_theme.dart';
 import '../models/trusted_person.dart';
 
 class TrustedPersons extends StatefulWidget {
@@ -16,6 +18,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
   final _formKey = GlobalKey<FormState>();
   final AuthService _authService = AuthService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final EmailService _emailService = MailtoEmailService();
   
   bool _isAdding = false;
   bool _isLoading = true;
@@ -187,7 +190,46 @@ class _TrustedPersonsState extends State<TrustedPersons> {
     }
   }
 
-  Future<void> _confirmAndDeletePerson(String id, AppLocalizations l10n) async {
+  Future<void> _sendInvitation(TrustedPerson person, AppLocalizations l10n) async {
+    try {
+      const String appUrl = 'https://my-cypress.web.app';
+
+      await _emailService.sendEmail(
+        toEmail: person.email,
+        subject: 'My-Cypress',
+        body: l10n.invitationEmailBody(person.firstName, appUrl),
+      );
+
+      final user = _authService.currentUser;
+      if (user == null) return;
+
+      final updatedPerson = person.copyWith(status: TrustedPersonStatus.pending);
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('trusted_persons')
+          .doc(person.id)
+          .update({'status': updatedPerson.status.name});
+
+      if (mounted) {
+        setState(() {
+          final index = _trustedPersons.indexWhere((p) => p.id == person.id);
+          if (index != -1) {
+            _trustedPersons[index] = updatedPerson;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _confirmAndDeletePerson(String id, AppLocalizations l10n, ThemeData theme) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -200,7 +242,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.deleteButton, style: const TextStyle(color: Colors.red)),
+            child: Text(l10n.deleteButton, style: TextStyle(color: theme.colorScheme.error)),
           ),
         ],
       ),
@@ -249,29 +291,26 @@ class _TrustedPersonsState extends State<TrustedPersons> {
         title: Text(l10n.trustedPersonsTitle),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(AppTheme.spacingLg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_errorMessage != null) ...[
               Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                padding: const EdgeInsets.all(AppTheme.spacingMd),
+                decoration: AppTheme.errorContainerDecoration(theme),
                 child: Text(
                   _errorMessage!,
-                  style: TextStyle(color: Colors.red.shade900),
+                  style: AppTheme.errorTextStyle(theme),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppTheme.spacingLg),
             ],
             Text(
               l10n.trustedPersonsDescription,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              style: theme.textTheme.bodyMedium,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.spacingLg),
             if (_trustedPersons.isNotEmpty) ...[
               ListView.builder(
                 shrinkWrap: true,
@@ -279,32 +318,56 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                 itemCount: _trustedPersons.length,
                 itemBuilder: (context, index) {
                   final person = _trustedPersons[index];
+                  final statusColor = _getStatusColor(person.status);
                   return Card(
                     child: ListTile(
                       title: Text('${person.firstName} ${person.lastName}'),
-                      subtitle: Text(person.email),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(person.email),
+                          const SizedBox(height: AppTheme.spacingXs),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppTheme.spacingSm,
+                                  vertical: 2,
+                                ),
+                                decoration: AppTheme.statusBadgeDecoration(statusColor),
+                                child: Text(
+                                  _getStatusLabel(person.status, l10n),
+                                  style: theme.textTheme.labelSmall?.copyWith(color: statusColor),
+                                ),
+                              ),
+                              if (person.status == TrustedPersonStatus.notSent || person.status == TrustedPersonStatus.pending) ...[
+                                const SizedBox(width: AppTheme.spacingSm),
+                                TextButton.icon(
+                                  onPressed: () => _sendInvitation(person, l10n),
+                                  icon: const Icon(Icons.send, size: 14),
+                                  label: Text(l10n.sendButton),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: const Size(50, 30),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                      isThreeLine: true,
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(person.status).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: _getStatusColor(person.status)),
-                            ),
-                            child: Text(
-                              _getStatusLabel(person.status, l10n),
-                              style: TextStyle(color: _getStatusColor(person.status), fontSize: 12),
-                            ),
-                          ),
                           IconButton(
-                            icon: Icon(Icons.edit, size: 20, color: theme.colorScheme.primary),
+                            icon: Icon(Icons.edit, color: theme.colorScheme.primary),
                             onPressed: () => _startEditing(person),
                           ),
                           IconButton(
-                            icon: Icon(Icons.delete, size: 20, color: theme.colorScheme.secondary),
-                            onPressed: () => _confirmAndDeletePerson(person.id, l10n),
+                            icon: Icon(Icons.delete, color: theme.colorScheme.secondary),
+                            onPressed: () => _confirmAndDeletePerson(person.id, l10n, theme),
                           ),
                         ],
                       ),
@@ -312,7 +375,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                   );
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppTheme.spacingLg),
             ],
             if (!_isAdding && _trustedPersons.length < 3) ...[
               ElevatedButton(
@@ -330,7 +393,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                       children: [
                         Text(
                           _editingPersonId == null ? l10n.addPersonTitle : l10n.editPersonTitle,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: theme.textTheme.titleMedium,
                         ),
                         IconButton(
                           icon: Icon(Icons.close, color: theme.colorScheme.primary),
@@ -343,7 +406,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppTheme.spacingSm),
                     TextFormField(
                       controller: _firstNameController,
                       decoration: InputDecoration(labelText: l10n.firstName),
@@ -354,7 +417,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppTheme.spacingSm),
                     TextFormField(
                       controller: _lastNameController,
                       decoration: InputDecoration(labelText: l10n.lastName),
@@ -365,7 +428,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppTheme.spacingSm),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -381,7 +444,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppTheme.spacingMd),
                     ElevatedButton(
                       onPressed: _isSaving ? null : () => _savePerson(l10n),
                       child: _isSaving
@@ -390,7 +453,6 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
                               ),
                             )
                           : Text(_editingPersonId == null ? l10n.addTrustedPerson : l10n.saveChangesButton),

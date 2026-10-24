@@ -26,6 +26,24 @@ class TrustedPerson {
         email = _sanitize(email),
         videoUrl = videoUrl != null ? _sanitize(videoUrl) : null;
 
+  TrustedPerson copyWith({
+    String? id,
+    String? lastName,
+    String? firstName,
+    String? email,
+    TrustedPersonStatus? status,
+    String? videoUrl,
+  }) {
+    return TrustedPerson(
+      id: id ?? this.id,
+      lastName: lastName ?? this.lastName,
+      firstName: firstName ?? this.firstName,
+      email: email ?? this.email,
+      status: status ?? this.status,
+      videoUrl: videoUrl ?? this.videoUrl,
+    );
+  }
+
   static String _sanitize(String input) {
     return input
         .replaceAll(RegExp(r'<[^>]*>'), '')

@@ -120,4 +120,31 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get invalidEmail => 'Veuillez entrer un e-mail valide';
+
+  @override
+  String get editPersonTitle => 'Modifier le contact';
+
+  @override
+  String get confirmDeleteTitle => 'Confirmer la suppression';
+
+  @override
+  String get confirmDeleteContent =>
+      'Voulez-vous vraiment supprimer ce contact de confiance ?';
+
+  @override
+  String get cancelButton => 'Annuler';
+
+  @override
+  String get deleteButton => 'Supprimer';
+
+  @override
+  String get saveChangesButton => 'Enregistrer les modifications';
+
+  @override
+  String get sendButton => 'Envoyer';
+
+  @override
+  String invitationEmailBody(String firstName, String appUrl) {
+    return 'Bonjour $firstName,\n\nVous avez été désigné comme personne de confiance sur My-Cypress.\n\nVous pouvez télécharger l\'application ou vous connecter en ligne ici : $appUrl';
+  }
 }

@@ -120,4 +120,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invalidEmail => 'Please enter a valid email';
+
+  @override
+  String get editPersonTitle => 'Edit contact';
+
+  @override
+  String get confirmDeleteTitle => 'Confirm deletion';
+
+  @override
+  String get confirmDeleteContent =>
+      'Do you really want to delete this trusted person?';
+
+  @override
+  String get cancelButton => 'Cancel';
+
+  @override
+  String get deleteButton => 'Delete';
+
+  @override
+  String get saveChangesButton => 'Save changes';
+
+  @override
+  String get sendButton => 'Send';
+
+  @override
+  String invitationEmailBody(String firstName, String appUrl) {
+    return 'Hello $firstName,\n\nYou have been designated as a trusted person on My-Cypress.\n\nYou can download the app or log in online here: $appUrl';
+  }
 }

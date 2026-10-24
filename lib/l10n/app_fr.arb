@@ -43,5 +43,17 @@
   "confirmDeleteContent": "Voulez-vous vraiment supprimer ce contact de confiance ?",
   "cancelButton": "Annuler",
   "deleteButton": "Supprimer",
-  "saveChangesButton": "Enregistrer les modifications"
+  "saveChangesButton": "Enregistrer les modifications",
+  "sendButton": "Envoyer",
+  "invitationEmailBody": "Bonjour {firstName},\n\nVous avez été désigné comme personne de confiance sur My-Cypress.\n\nVous pouvez télécharger l'application ou vous connecter en ligne ici : {appUrl}",
+  "@invitationEmailBody": {
+    "placeholders": {
+      "firstName": {
+        "type": "String"
+      },
+      "appUrl": {
+        "type": "String"
+      }
+    }
+  }
 }

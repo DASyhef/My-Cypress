@@ -38,11 +38,22 @@
   "add": "Add",
   "fieldRequired": "This field is required",
   "invalidEmail": "Please enter a valid email",
-  "editPersonTitle": "Modifier le contact",
   "editPersonTitle": "Edit contact",
   "confirmDeleteTitle": "Confirm deletion",
   "confirmDeleteContent": "Do you really want to delete this trusted person?",
   "cancelButton": "Cancel",
   "deleteButton": "Delete",
-  "saveChangesButton": "Save changes"
+  "saveChangesButton": "Save changes",
+  "sendButton": "Send",
+  "invitationEmailBody": "Hello {firstName},\n\nYou have been designated as a trusted person on My-Cypress.\n\nYou can download the app or log in online here: {appUrl}",
+  "@invitationEmailBody": {
+    "placeholders": {
+      "firstName": {
+        "type": "String"
+      },
+      "appUrl": {
+        "type": "String"
+      }
+    }
+  }
 }

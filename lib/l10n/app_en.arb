@@ -37,5 +37,12 @@
   "cancel": "Cancel",
   "add": "Add",
   "fieldRequired": "This field is required",
-  "invalidEmail": "Please enter a valid email"
+  "invalidEmail": "Please enter a valid email",
+  "editPersonTitle": "Modifier le contact",
+  "editPersonTitle": "Edit contact",
+  "confirmDeleteTitle": "Confirm deletion",
+  "confirmDeleteContent": "Do you really want to delete this trusted person?",
+  "cancelButton": "Cancel",
+  "deleteButton": "Delete",
+  "saveChangesButton": "Save changes"
 }

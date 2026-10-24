@@ -21,6 +21,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
   bool _isLoading = true;
   bool _isSaving = false;
   String? _errorMessage;
+  String? _editingPersonId;
 
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -42,10 +43,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
 
   Future<void> _loadTrustedPersons() async {
     final user = _authService.currentUser;
-    if (user == null) {
-      print('DEBUG: _loadTrustedPersons - Utilisateur non connecté');
-      return;
-    }
+    if (user == null) return;
 
     try {
       final snapshot = await _firestore
@@ -61,7 +59,6 @@ class _TrustedPersonsState extends State<TrustedPersons> {
         }
       });
     } catch (e) {
-      print('DEBUG: _loadTrustedPersons - Erreur = $e');
       if (mounted) {
         setState(() {
           _errorMessage = e.toString();
@@ -102,52 +99,80 @@ class _TrustedPersonsState extends State<TrustedPersons> {
     }
   }
 
-  Future<void> _addPerson(AppLocalizations l10n) async {
+  void _startAdding() {
+    setState(() {
+      _editingPersonId = null;
+      _firstNameController.clear();
+      _lastNameController.clear();
+      _emailController.clear();
+      _isAdding = true;
+    });
+  }
+
+  void _startEditing(TrustedPerson person) {
+    setState(() {
+      _editingPersonId = person.id;
+      _firstNameController.text = person.firstName;
+      _lastNameController.text = person.lastName;
+      _emailController.text = person.email;
+      _isAdding = true;
+    });
+  }
+
+  Future<void> _savePerson(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) return;
 
     final user = _authService.currentUser;
-    if (user == null) {
-      print('DEBUG: _addPerson - Utilisateur non connecté !');
-      return;
-    }
-
-    print('DEBUG: _addPerson - UID utilisateur = ${user.uid}');
+    if (user == null) return;
 
     setState(() {
       _isSaving = true;
       _errorMessage = null;
     });
 
-    final newPerson = TrustedPerson(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+    final personId = _editingPersonId ?? DateTime.now().millisecondsSinceEpoch.toString();
+    
+    TrustedPersonStatus currentStatus = TrustedPersonStatus.notSent;
+    if (_editingPersonId != null) {
+      final existing = _trustedPersons.firstWhere((p) => p.id == _editingPersonId);
+      currentStatus = existing.status;
+    }
+
+    final person = TrustedPerson(
+      id: personId,
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
       email: _emailController.text.trim(),
-      status: TrustedPersonStatus.notSent,
+      status: currentStatus,
     );
 
     try {
-      print('DEBUG: Tentative d écriture Firestore...');
       await _firestore
           .collection('users')
           .doc(user.uid)
           .collection('trusted_persons')
-          .doc(newPerson.id)
-          .set(newPerson.toJson());
-      print('DEBUG: Écriture Firestore réussie !');
+          .doc(personId)
+          .set(person.toJson());
 
       if (mounted) {
         setState(() {
-          _trustedPersons.add(newPerson);
+          if (_editingPersonId != null) {
+            final index = _trustedPersons.indexWhere((p) => p.id == _editingPersonId);
+            if (index != -1) {
+              _trustedPersons[index] = person;
+            }
+          } else {
+            _trustedPersons.add(person);
+          }
           _firstNameController.clear();
           _lastNameController.clear();
           _emailController.clear();
           _formKey.currentState!.reset();
           _isAdding = false;
+          _editingPersonId = null;
         });
       }
     } catch (e) {
-      print('DEBUG: Erreur Firestore = $e');
       if (mounted) {
         setState(() {
           _errorMessage = e.toString();
@@ -162,9 +187,56 @@ class _TrustedPersonsState extends State<TrustedPersons> {
     }
   }
 
+  Future<void> _confirmAndDeletePerson(String id, AppLocalizations l10n) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.confirmDeleteTitle),
+        content: Text(l10n.confirmDeleteContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.deleteButton, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final user = _authService.currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('trusted_persons')
+          .doc(id)
+          .delete();
+
+      if (mounted) {
+        setState(() {
+          _trustedPersons.removeWhere((p) => p.id == id);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
 
     if (_isLoading) {
       return const Scaffold(
@@ -211,17 +283,30 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                     child: ListTile(
                       title: Text('${person.firstName} ${person.lastName}'),
                       subtitle: Text(person.email),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(person.status).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _getStatusColor(person.status)),
-                        ),
-                        child: Text(
-                          _getStatusLabel(person.status, l10n),
-                          style: TextStyle(color: _getStatusColor(person.status), fontSize: 12),
-                        ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(person.status).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: _getStatusColor(person.status)),
+                            ),
+                            child: Text(
+                              _getStatusLabel(person.status, l10n),
+                              style: TextStyle(color: _getStatusColor(person.status), fontSize: 12),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.edit, size: 20, color: theme.colorScheme.primary),
+                            onPressed: () => _startEditing(person),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete, size: 20, color: theme.colorScheme.secondary),
+                            onPressed: () => _confirmAndDeletePerson(person.id, l10n),
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -231,11 +316,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
             ],
             if (!_isAdding && _trustedPersons.length < 3) ...[
               ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _isAdding = true;
-                  });
-                },
+                onPressed: _startAdding,
                 child: Text(l10n.addTrustedPerson),
               ),
             ] else if (_isAdding) ...[
@@ -248,14 +329,15 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          l10n.addPersonTitle,
+                          _editingPersonId == null ? l10n.addPersonTitle : l10n.editPersonTitle,
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close),
+                          icon: Icon(Icons.close, color: theme.colorScheme.primary),
                           onPressed: () {
                             setState(() {
                               _isAdding = false;
+                              _editingPersonId = null;
                             });
                           },
                         ),
@@ -301,7 +383,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton(
-                      onPressed: _isSaving ? null : () => _addPerson(l10n),
+                      onPressed: _isSaving ? null : () => _savePerson(l10n),
                       child: _isSaving
                           ? const SizedBox(
                               height: 20,
@@ -311,7 +393,7 @@ class _TrustedPersonsState extends State<TrustedPersons> {
                                 color: Colors.white,
                               ),
                             )
-                          : Text(l10n.addTrustedPerson),
+                          : Text(_editingPersonId == null ? l10n.addTrustedPerson : l10n.saveChangesButton),
                     ),
                   ],
                 ),

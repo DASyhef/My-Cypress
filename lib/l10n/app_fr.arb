@@ -37,5 +37,11 @@
   "cancel": "Annuler",
   "add": "Ajouter",
   "fieldRequired": "Ce champ est obligatoire",
-  "invalidEmail": "Veuillez entrer un e-mail valide"
+  "editPersonTitle": "Modifier le contact",
+  "invalidEmail": "Veuillez entrer un e-mail valide",
+  "confirmDeleteTitle": "Confirmer la suppression",
+  "confirmDeleteContent": "Voulez-vous vraiment supprimer ce contact de confiance ?",
+  "cancelButton": "Annuler",
+  "deleteButton": "Supprimer",
+  "saveChangesButton": "Enregistrer les modifications"
 }

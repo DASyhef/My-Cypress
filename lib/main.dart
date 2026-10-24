@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       title: 'My-Cypress',
-      localizationsDelegates: [
+      localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -104,6 +104,8 @@ class MyApp extends StatelessWidget {
                 if (lastName.isEmpty || firstName.isEmpty) {
                   return const ProfilePage();
                 }
+              } else {
+                return const ProfilePage();
               }
 
               return const DashboardPage();

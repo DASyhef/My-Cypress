@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:gontran/l10n/app_localizations.dart';
 import 'package:gontran/services/auth_service.dart';
 import 'package:gontran/views/profile_page.dart';
+import 'package:gontran/views/trusted_persons.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -10,14 +12,15 @@ class DashboardPage extends StatelessWidget {
     final AuthService authService = AuthService();
     final user = authService.currentUser;
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tableau de bord'),
+        title: Text(l10n.dashboardTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Se déconnecter',
+            tooltip: l10n.signOutTooltip,
             onPressed: () async {
               await authService.signOut();
             },
@@ -30,12 +33,12 @@ class DashboardPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Bienvenue',
+              l10n.welcomeMessage,
               style: theme.textTheme.headlineMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              user?.email ?? user?.phoneNumber ?? 'Utilisateur',
+              user?.email ?? user?.phoneNumber ?? l10n.defaultUserFallback,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
@@ -47,7 +50,7 @@ class DashboardPage extends StatelessWidget {
                 children: [
                   _buildCard(
                     context,
-                    title: 'Profil',
+                    title: l10n.profileCardTitle,
                     icon: Icons.person,
                     onTap: () {
                       Navigator.push(
@@ -60,7 +63,20 @@ class DashboardPage extends StatelessWidget {
                   ),
                   _buildCard(
                     context,
-                    title: 'Paramètres',
+                    title: l10n.trustedPersonsTitle,
+                    icon: Icons.group,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TrustedPersons(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildCard(
+                    context,
+                    title: l10n.settingsCardTitle,
                     icon: Icons.settings,
                     onTap: () {},
                   ),

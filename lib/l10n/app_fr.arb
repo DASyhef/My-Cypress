@@ -1,0 +1,59 @@
+{
+  "dashboardTitle": "Tableau de bord",
+  "signOutTooltip": "Se déconnecter",
+  "welcomeMessage": "Bienvenue",
+  "defaultUserFallback": "Utilisateur",
+  "profileCardTitle": "Profil",
+  "settingsCardTitle": "Paramètres",
+
+  "profilePageTitle": "État civil",
+  "profileLoadError": "Erreur lors du chargement du profil :",
+  "profileSaveSuccess": "État civil enregistré avec succès",
+  "profileSaveError": "Erreur lors de la sauvegarde :",
+  "titleLabel": "Titre",
+  "lastNameLabel": "Nom *",
+  "lastNameError": "Veuillez renseigner votre nom",
+  "birthNameLabel": "Nom de naissance",
+  "firstNameLabel": "Prénom(s) *",
+  "firstNameError": "Veuillez renseigner votre prénom",
+  "nicknameLabel": "Surnom",
+  "profileSensibilisationMessage": "Sensibilisation : Vos volontés ont une valeur légale et morale. Il est primordial d'indiquer votre vraie identité pour éviter tout litige lors de leur exécution.",
+  "birthDateLabel": "Date de naissance *",
+  "birthDateError": "Veuillez renseigner votre date de naissance",
+  "countryLabel": "Pays",
+  "saveProfileButton": "Enregistrer l'état civil",
+
+  "trustedPersonsTitle": "Personnes de confiance",
+  "trustedPersonsDescription": "Choisissez jusqu'à 3 personnes de confiance. Un envoi de mail automatique sera effectué.",
+  "addTrustedPerson": "Ajouter une personne de confiance",
+  "statusNotSent": "Mail pas envoyé",
+  "statusPending": "Attente d'une réponse",
+  "statusAccepted": "Accepté",
+  "statusDeclined": "Refusé",
+  "addPersonTitle": "Ajouter une personne de confiance",
+  "firstName": "Prénom",
+  "lastName": "Nom",
+  "email": "E-mail",
+  "cancel": "Annuler",
+  "add": "Ajouter",
+  "fieldRequired": "Ce champ est obligatoire",
+  "editPersonTitle": "Modifier le contact",
+  "invalidEmail": "Veuillez entrer un e-mail valide",
+  "confirmDeleteTitle": "Confirmer la suppression",
+  "confirmDeleteContent": "Voulez-vous vraiment supprimer ce contact de confiance ?",
+  "cancelButton": "Annuler",
+  "deleteButton": "Supprimer",
+  "saveChangesButton": "Enregistrer les modifications",
+  "sendButton": "Envoyer",
+  "invitationEmailBody": "Bonjour {firstName},\n\nVous avez été désigné comme personne de confiance sur My-Cypress.\n\nVous pouvez télécharger l'application ou vous connecter en ligne ici : {appUrl}",
+  "@invitationEmailBody": {
+    "placeholders": {
+      "firstName": {
+        "type": "String"
+      },
+      "appUrl": {
+        "type": "String"
+      }
+    }
+  }
+}

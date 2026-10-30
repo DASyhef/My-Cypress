@@ -5,6 +5,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthService {
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
+  AuthService._internal();
+
+  static String? pendingAuthMessage;
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -18,9 +24,7 @@ class AuthService {
 
   Future<void> _ensureGoogleSignInInitialized() async {
     if (!_isGoogleSignInInitialized) {
-      await GoogleSignIn.instance.initialize(
-        clientId: _webClientId,
-      );
+      await GoogleSignIn.instance.initialize(clientId: _webClientId);
       _isGoogleSignInInitialized = true;
     }
   }
@@ -29,7 +33,10 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
-  Future<void> _handleUserRegistration(User user) async {
+  Future<void> _handleUserRegistration(
+    User user, {
+    bool emailVerified = true,
+  }) async {
     final userRef = _firestore.collection('users').doc(user.uid);
     final doc = await userRef.get();
 
@@ -38,6 +45,7 @@ class AuthService {
         'uid': user.uid,
         'email': user.email ?? '',
         'phoneNumber': user.phoneNumber ?? '',
+        'emailVerified': emailVerified,
         'title': '',
         'lastName': '',
         'birthName': '',
@@ -58,9 +66,13 @@ class AuthService {
       email: email,
       password: password,
     );
+
     if (credential.user != null) {
       try {
-        await _handleUserRegistration(credential.user!);
+        await _auth.setLanguageCode('fr');
+        await credential.user!.sendEmailVerification();
+        await _handleUserRegistration(credential.user!, emailVerified: false);
+        await _auth.signOut();
       } catch (e) {
         await _auth.signOut();
         rethrow;
@@ -80,18 +92,34 @@ class AuthService {
 
     if (credential.user != null) {
       try {
-        final userRef = _firestore.collection('users').doc(credential.user!.uid);
+        await credential.user!.reload();
+        final refreshedUser = _auth.currentUser ?? credential.user!;
+
+        if (!refreshedUser.emailVerified) {
+          await _auth.signOut();
+          throw FirebaseAuthException(
+            code: 'email-not-verified',
+            message: 'Veuillez vérifier votre e-mail avant de vous connecter.',
+          );
+        }
+
+        final userRef = _firestore.collection('users').doc(refreshedUser.uid);
         final doc = await userRef.get();
 
         if (!doc.exists) {
           await _auth.signOut();
           throw FirebaseAuthException(
             code: 'user-not-registered',
-            message: 'Aucun compte associé à cet email. Veuillez d\'abord vous inscrire.',
+            message:
+                'Aucun compte associé à cet email. Veuillez d\'abord vous inscrire.',
           );
         }
+
+        await userRef.set({'emailVerified': true}, SetOptions(merge: true));
       } catch (e) {
-        await _auth.signOut();
+        if (_auth.currentUser != null) {
+          await _auth.signOut();
+        }
         if (e is FirebaseAuthException) rethrow;
         throw FirebaseAuthException(
           code: 'firestore-check-failed',
@@ -104,12 +132,14 @@ class AuthService {
   }
 
   Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.setLanguageCode('fr');
     await _auth.sendPasswordResetEmail(email: email);
   }
 
   Future<void> sendEmailVerification() async {
     final user = _auth.currentUser;
     if (user != null && !user.emailVerified) {
+      await _auth.setLanguageCode('fr');
       await user.sendEmailVerification();
     }
   }
@@ -123,12 +153,12 @@ class AuthService {
     } else {
       await _ensureGoogleSignInInitialized();
 
-      final GoogleSignInAccount googleUser =
-          await GoogleSignIn.instance.authenticate();
+      final GoogleSignInAccount googleUser = await GoogleSignIn.instance
+          .authenticate();
 
       final scopes = ['email', 'profile'];
-      final authorization =
-          await googleUser.authorizationClient.authorizeScopes(scopes);
+      final authorization = await googleUser.authorizationClient
+          .authorizeScopes(scopes);
 
       final OAuthCredential oauthCredential = GoogleAuthProvider.credential(
         accessToken: authorization.accessToken,
@@ -140,7 +170,7 @@ class AuthService {
 
     if (credential.user != null) {
       try {
-        await _handleUserRegistration(credential.user!);
+        await _handleUserRegistration(credential.user!, emailVerified: true);
       } catch (e) {
         await _auth.signOut();
         if (!kIsWeb) {
@@ -162,12 +192,12 @@ class AuthService {
     } else {
       await _ensureGoogleSignInInitialized();
 
-      final GoogleSignInAccount googleUser =
-          await GoogleSignIn.instance.authenticate();
+      final GoogleSignInAccount googleUser = await GoogleSignIn.instance
+          .authenticate();
 
       final scopes = ['email', 'profile'];
-      final authorization =
-          await googleUser.authorizationClient.authorizeScopes(scopes);
+      final authorization = await googleUser.authorizationClient
+          .authorizeScopes(scopes);
 
       final OAuthCredential oauthCredential = GoogleAuthProvider.credential(
         accessToken: authorization.accessToken,
@@ -179,7 +209,9 @@ class AuthService {
 
     if (credential.user != null) {
       try {
-        final userRef = _firestore.collection('users').doc(credential.user!.uid);
+        final userRef = _firestore
+            .collection('users')
+            .doc(credential.user!.uid);
         final doc = await userRef.get();
 
         if (!doc.exists) {
@@ -189,7 +221,8 @@ class AuthService {
           }
           throw FirebaseAuthException(
             code: 'user-not-registered',
-            message: 'Aucun compte enregistré avec ce Google. Veuillez d\'abord vous inscrire.',
+            message:
+                'Aucun compte enregistré avec ce Google. Veuillez d\'abord vous inscrire.',
           );
         }
       } catch (e) {
@@ -226,7 +259,10 @@ class AuthService {
 
     if (userCredential.user != null) {
       try {
-        await _handleUserRegistration(userCredential.user!);
+        await _handleUserRegistration(
+          userCredential.user!,
+          emailVerified: true,
+        );
       } catch (e) {
         await _auth.signOut();
         rethrow;
@@ -254,14 +290,17 @@ class AuthService {
 
     if (userCredential.user != null) {
       try {
-        final userRef = _firestore.collection('users').doc(userCredential.user!.uid);
+        final userRef = _firestore
+            .collection('users')
+            .doc(userCredential.user!.uid);
         final doc = await userRef.get();
 
         if (!doc.exists) {
           await _auth.signOut();
           throw FirebaseAuthException(
             code: 'user-not-registered',
-            message: 'Aucun compte enregistré avec Apple. Veuillez d\'abord vous inscrire.',
+            message:
+                'Aucun compte enregistré avec Apple. Veuillez d\'abord vous inscrire.',
           );
         }
       } catch (e) {
@@ -305,7 +344,10 @@ class AuthService {
 
     if (userCredential.user != null) {
       try {
-        await _handleUserRegistration(userCredential.user!);
+        await _handleUserRegistration(
+          userCredential.user!,
+          emailVerified: true,
+        );
       } catch (e) {
         await _auth.signOut();
         rethrow;
@@ -327,14 +369,17 @@ class AuthService {
 
     if (userCredential.user != null) {
       try {
-        final userRef = _firestore.collection('users').doc(userCredential.user!.uid);
+        final userRef = _firestore
+            .collection('users')
+            .doc(userCredential.user!.uid);
         final doc = await userRef.get();
 
         if (!doc.exists) {
           await _auth.signOut();
           throw FirebaseAuthException(
             code: 'user-not-registered',
-            message: 'Aucun compte enregistré avec ce numéro. Veuillez d\'abord vous inscrire.',
+            message:
+                'Aucun compte enregistré avec ce numéro. Veuillez d\'abord vous inscrire.',
           );
         }
       } catch (e) {

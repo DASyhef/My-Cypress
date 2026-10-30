@@ -367,6 +367,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hello {firstName},\n\nYou have been designated as a trusted person on My-Cypress.\n\nYou can download the app or log in online here: {appUrl}'**
   String invitationEmailBody(String firstName, String appUrl);
+
+  /// No description provided for @authTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My-Cypress'**
+  String get authTitle;
+
+  /// No description provided for @authLoginSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to your space'**
+  String get authLoginSubtitle;
+
+  /// No description provided for @authRegisterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account'**
+  String get authRegisterSubtitle;
+
+  /// No description provided for @usePhoneInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Use phone number instead'**
+  String get usePhoneInstead;
+
+  /// No description provided for @useEmailInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Use email instead'**
+  String get useEmailInstead;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @signUpWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign up with Google'**
+  String get signUpWithGoogle;
+
+  /// No description provided for @continueWithApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Apple'**
+  String get continueWithApple;
+
+  /// No description provided for @signUpWithApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign up with Apple'**
+  String get signUpWithApple;
+
+  /// No description provided for @noAccountYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account yet?'**
+  String get noAccountYet;
+
+  /// No description provided for @alreadyHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account?'**
+  String get alreadyHaveAccount;
+
+  /// No description provided for @signUpButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign up'**
+  String get signUpButton;
+
+  /// No description provided for @signInButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInButton;
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get emailLabel;
+
+  /// No description provided for @invalidEmailError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email'**
+  String get invalidEmailError;
+
+  /// No description provided for @passwordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// No description provided for @passwordTooShortError.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get passwordTooShortError;
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number (+33...)'**
+  String get phoneLabel;
+
+  /// No description provided for @invalidPhoneError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number in international format'**
+  String get invalidPhoneError;
+
+  /// No description provided for @sendSmsCodeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Send SMS code'**
+  String get sendSmsCodeButton;
+
+  /// No description provided for @smsCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS verification code'**
+  String get smsCodeLabel;
+
+  /// No description provided for @invalidSmsCodeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code received by SMS'**
+  String get invalidSmsCodeError;
+
+  /// No description provided for @validateCodeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Validate code'**
+  String get validateCodeButton;
+
+  /// No description provided for @editPhoneButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit phone number'**
+  String get editPhoneButton;
+
+  /// No description provided for @verificationEmailSent.
+  ///
+  /// In en, this message translates to:
+  /// **'A verification email has been sent to your address. Please check your inbox before logging in.'**
+  String get verificationEmailSent;
 }
 
 class _AppLocalizationsDelegate

@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gontran/l10n/app_localizations.dart';
 import 'package:gontran/models/auth_credentials.dart';
 import 'package:gontran/services/auth_service.dart';
+import 'package:gontran/theme/app_theme.dart';
 
 class AuthPage extends StatefulWidget {
-  const AuthPage({super.key});
+  final String? initialInfoMessage;
+  const AuthPage({super.key, this.initialInfoMessage});
 
   @override
   State<AuthPage> createState() => _AuthPageState();
 }
 
 enum AuthMode { email, phone }
+
 enum AuthAction { login, register }
 
 class _AuthPageState extends State<AuthPage> {
@@ -22,6 +26,7 @@ class _AuthPageState extends State<AuthPage> {
   AuthAction _authAction = AuthAction.login;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _infoMessage;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -33,6 +38,12 @@ class _AuthPageState extends State<AuthPage> {
   bool _codeSent = false;
 
   @override
+  void initState() {
+    super.initState();
+    _infoMessage = widget.initialInfoMessage;
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -41,9 +52,9 @@ class _AuthPageState extends State<AuthPage> {
     super.dispose();
   }
 
-  Future<void> _submitEmail() async {
+  Future<void> _submitEmail(AppLocalizations l10n) async {
     if (!_emailFormKey.currentState!.validate()) return;
-    
+
     final credentials = EmailCredentials(
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
@@ -52,10 +63,12 @@ class _AuthPageState extends State<AuthPage> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _infoMessage = null;
     });
 
     try {
       if (_authAction == AuthAction.register) {
+        AuthService.pendingAuthMessage = l10n.verificationEmailSent;
         await _authService.signUpWithEmail(
           email: credentials.email,
           password: credentials.password,
@@ -66,20 +79,68 @@ class _AuthPageState extends State<AuthPage> {
           password: credentials.password,
         );
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
+      AuthService.pendingAuthMessage = null;
       if (mounted) {
         setState(() {
-          _errorMessage = e.message;
+          _errorMessage = e is FirebaseAuthException ? e.message : e.toString();
           _isLoading = false;
         });
       }
     }
   }
 
+  void _showForgotPasswordDialog(AppLocalizations l10n) {
+    final resetController = TextEditingController(text: _emailController.text);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Réinitialisation du mot de passe'),
+        content: TextField(
+          controller: resetController,
+          keyboardType: TextInputType.emailAddress,
+          decoration: InputDecoration(labelText: l10n.emailLabel),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = resetController.text.trim();
+              if (email.isEmpty) return;
+              Navigator.pop(context);
+              try {
+                await _authService.sendPasswordResetEmail(email);
+                if (mounted) {
+                  setState(() {
+                    _infoMessage = 'E-mail de réinitialisation envoyé.';
+                    _errorMessage = null;
+                  });
+                }
+              } catch (e) {
+                if (mounted) {
+                  setState(() {
+                    _errorMessage = e is FirebaseAuthException
+                        ? e.message
+                        : e.toString();
+                  });
+                }
+              }
+            },
+            child: const Text('Envoyer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleGoogleAuth() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _infoMessage = null;
     });
 
     try {
@@ -88,10 +149,10 @@ class _AuthPageState extends State<AuthPage> {
       } else {
         await _authService.signInWithGoogle();
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.message;
+          _errorMessage = e is FirebaseAuthException ? e.message : e.toString();
           _isLoading = false;
         });
       }
@@ -102,6 +163,7 @@ class _AuthPageState extends State<AuthPage> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _infoMessage = null;
     });
 
     try {
@@ -110,10 +172,10 @@ class _AuthPageState extends State<AuthPage> {
       } else {
         await _authService.signInWithApple();
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.message;
+          _errorMessage = e is FirebaseAuthException ? e.message : e.toString();
           _isLoading = false;
         });
       }
@@ -128,6 +190,7 @@ class _AuthPageState extends State<AuthPage> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _infoMessage = null;
     });
 
     await _authService.verifyPhoneNumber(
@@ -171,6 +234,7 @@ class _AuthPageState extends State<AuthPage> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _infoMessage = null;
     });
 
     try {
@@ -185,10 +249,10 @@ class _AuthPageState extends State<AuthPage> {
           smsCode: credentials.smsCode,
         );
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.message;
+          _errorMessage = e is FirebaseAuthException ? e.message : e.toString();
           _isLoading = false;
         });
       }
@@ -197,51 +261,65 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(AppTheme.spacingLg),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
+            constraints: const BoxConstraints(maxWidth: AppTheme.maxFormWidth),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'My-Cypress',
+                  l10n.authTitle,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineMedium,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppTheme.spacingXs),
                 Text(
                   _authAction == AuthAction.login
-                      ? 'Connexion à votre espace'
-                      : 'Création de compte',
+                      ? l10n.authLoginSubtitle
+                      : l10n.authRegisterSubtitle,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium,
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: AppTheme.spacingXl),
                 if (_errorMessage != null) ...[
                   Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    padding: const EdgeInsets.all(AppTheme.spacingMd),
+                    decoration: AppTheme.errorContainerDecoration(theme),
                     child: Text(
                       _errorMessage!,
-                      style: TextStyle(color: Colors.red.shade900),
+                      style: AppTheme.errorTextStyle(theme),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTheme.spacingMd),
+                ],
+                if (_infoMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(AppTheme.spacingMd),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.borderRadiusSm,
+                      ),
+                    ),
+                    child: Text(
+                      _infoMessage!,
+                      style: TextStyle(color: Colors.green.shade900),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spacingMd),
                 ],
                 if (_authMode == AuthMode.email)
-                  _buildEmailForm(theme)
+                  _buildEmailForm(theme, l10n)
                 else
-                  _buildPhoneForm(theme),
-                const SizedBox(height: 16),
+                  _buildPhoneForm(theme, l10n),
+                const SizedBox(height: AppTheme.spacingMd),
                 TextButton(
                   onPressed: () {
                     setState(() {
@@ -249,49 +327,53 @@ class _AuthPageState extends State<AuthPage> {
                           ? AuthMode.phone
                           : AuthMode.email;
                       _errorMessage = null;
+                      _infoMessage = null;
                       _codeSent = false;
                     });
                   },
                   child: Text(
                     _authMode == AuthMode.email
-                        ? 'Utiliser plutôt le numéro de téléphone'
-                        : 'Utiliser plutôt l\'e-mail',
+                        ? l10n.usePhoneInstead
+                        : l10n.useEmailInstead,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppTheme.spacingMd),
                 const Divider(),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppTheme.spacingMd),
                 if (_isLoading)
                   const Center(child: CircularProgressIndicator())
                 else ...[
                   OutlinedButton.icon(
                     onPressed: _handleGoogleAuth,
-                    icon: const Icon(Icons.g_mobiledata, size: 28),
+                    icon: const Icon(
+                      Icons.g_mobiledata,
+                      size: AppTheme.iconSizeLg,
+                    ),
                     label: Text(
                       _authAction == AuthAction.login
-                          ? 'Continuer avec Google'
-                          : 'S\'inscrire avec Google',
+                          ? l10n.continueWithGoogle
+                          : l10n.signUpWithGoogle,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppTheme.spacingSm),
                   OutlinedButton.icon(
                     onPressed: _handleAppleAuth,
-                    icon: const Icon(Icons.apple, size: 24),
+                    icon: const Icon(Icons.apple, size: AppTheme.iconSizeMd),
                     label: Text(
                       _authAction == AuthAction.login
-                          ? 'Continuer avec Apple'
-                          : 'S\'inscrire avec Apple',
+                          ? l10n.continueWithApple
+                          : l10n.signUpWithApple,
                     ),
                   ),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: AppTheme.spacingLg),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       _authAction == AuthAction.login
-                          ? 'Pas encore de compte ?'
-                          : 'Déjà un compte ?',
+                          ? l10n.noAccountYet
+                          : l10n.alreadyHaveAccount,
                     ),
                     TextButton(
                       onPressed: () {
@@ -300,12 +382,13 @@ class _AuthPageState extends State<AuthPage> {
                               ? AuthAction.register
                               : AuthAction.login;
                           _errorMessage = null;
+                          _infoMessage = null;
                         });
                       },
                       child: Text(
                         _authAction == AuthAction.login
-                            ? 'S\'inscrire'
-                            : 'Se connecter',
+                            ? l10n.signUpButton
+                            : l10n.signInButton,
                       ),
                     ),
                   ],
@@ -318,39 +401,52 @@ class _AuthPageState extends State<AuthPage> {
     );
   }
 
-  Widget _buildEmailForm(ThemeData theme) {
+  Widget _buildEmailForm(ThemeData theme, AppLocalizations l10n) {
     return Form(
       key: _emailFormKey,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: 'Email'),
+            decoration: InputDecoration(labelText: l10n.emailLabel),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Saisissez un email valide';
+                return l10n.invalidEmailError;
               }
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppTheme.spacingMd),
           TextFormField(
             controller: _passwordController,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'Mot de passe'),
+            decoration: InputDecoration(labelText: l10n.passwordLabel),
             validator: (value) {
               if (value == null || value.length < 6) {
-                return 'Le mot de passe doit faire au moins 6 caractères';
+                return l10n.passwordTooShortError;
               }
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          if (_authAction == AuthAction.login) ...[
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => _showForgotPasswordDialog(l10n),
+                child: const Text('Mot de passe oublié ?'),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: AppTheme.spacingMd),
+          ],
           ElevatedButton(
-            onPressed: _isLoading ? null : _submitEmail,
+            onPressed: _isLoading ? null : () => _submitEmail(l10n),
             child: Text(
-              _authAction == AuthAction.login ? 'Se connecter' : 'S\'inscrire',
+              _authAction == AuthAction.login
+                  ? l10n.signInButton
+                  : l10n.signUpButton,
             ),
           ),
         ],
@@ -358,7 +454,7 @@ class _AuthPageState extends State<AuthPage> {
     );
   }
 
-  Widget _buildPhoneForm(ThemeData theme) {
+  Widget _buildPhoneForm(ThemeData theme, AppLocalizations l10n) {
     return Form(
       key: _phoneFormKey,
       child: Column(
@@ -367,39 +463,35 @@ class _AuthPageState extends State<AuthPage> {
             TextFormField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Numéro de téléphone (+33...)',
-              ),
+              decoration: InputDecoration(labelText: l10n.phoneLabel),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Saisissez un numéro au format international';
+                  return l10n.invalidPhoneError;
                 }
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.spacingMd),
             ElevatedButton(
               onPressed: _isLoading ? null : _verifyPhone,
-              child: const Text('Envoyer le code SMS'),
+              child: Text(l10n.sendSmsCodeButton),
             ),
           ] else ...[
             TextFormField(
               controller: _smsCodeController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Code de vérification SMS',
-              ),
+              decoration: InputDecoration(labelText: l10n.smsCodeLabel),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Saisissez le code reçu par SMS';
+                  return l10n.invalidSmsCodeError;
                 }
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.spacingMd),
             ElevatedButton(
               onPressed: _isLoading ? null : _submitSmsCode,
-              child: const Text('Valider le code'),
+              child: Text(l10n.validateCodeButton),
             ),
             TextButton(
               onPressed: () {
@@ -408,7 +500,7 @@ class _AuthPageState extends State<AuthPage> {
                   _verificationId = null;
                 });
               },
-              child: const Text('Modifier le numéro'),
+              child: Text(l10n.editPhoneButton),
             ),
           ],
         ],

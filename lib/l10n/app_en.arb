@@ -55,5 +55,31 @@
         "type": "String"
       }
     }
-  }
+  },
+
+  "authTitle": "My-Cypress",
+  "authLoginSubtitle": "Sign in to your space",
+  "authRegisterSubtitle": "Create an account",
+  "usePhoneInstead": "Use phone number instead",
+  "useEmailInstead": "Use email instead",
+  "continueWithGoogle": "Continue with Google",
+  "signUpWithGoogle": "Sign up with Google",
+  "continueWithApple": "Continue with Apple",
+  "signUpWithApple": "Sign up with Apple",
+  "noAccountYet": "Don't have an account yet?",
+  "alreadyHaveAccount": "Already have an account?",
+  "signUpButton": "Sign up",
+  "signInButton": "Sign in",
+  "emailLabel": "Email",
+  "invalidEmailError": "Enter a valid email",
+  "passwordLabel": "Password",
+  "passwordTooShortError": "Password must be at least 6 characters",
+  "phoneLabel": "Phone number (+33...)",
+  "invalidPhoneError": "Enter a number in international format",
+  "sendSmsCodeButton": "Send SMS code",
+  "smsCodeLabel": "SMS verification code",
+  "invalidSmsCodeError": "Enter the code received by SMS",
+  "validateCodeButton": "Validate code",
+  "editPhoneButton": "Edit phone number",
+  "verificationEmailSent": "A verification email has been sent to your address. Please check your inbox before logging in."
 }

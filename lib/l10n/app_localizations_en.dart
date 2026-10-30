@@ -147,4 +147,80 @@ class AppLocalizationsEn extends AppLocalizations {
   String invitationEmailBody(String firstName, String appUrl) {
     return 'Hello $firstName,\n\nYou have been designated as a trusted person on My-Cypress.\n\nYou can download the app or log in online here: $appUrl';
   }
+
+  @override
+  String get authTitle => 'My-Cypress';
+
+  @override
+  String get authLoginSubtitle => 'Sign in to your space';
+
+  @override
+  String get authRegisterSubtitle => 'Create an account';
+
+  @override
+  String get usePhoneInstead => 'Use phone number instead';
+
+  @override
+  String get useEmailInstead => 'Use email instead';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get signUpWithGoogle => 'Sign up with Google';
+
+  @override
+  String get continueWithApple => 'Continue with Apple';
+
+  @override
+  String get signUpWithApple => 'Sign up with Apple';
+
+  @override
+  String get noAccountYet => 'Don\'t have an account yet?';
+
+  @override
+  String get alreadyHaveAccount => 'Already have an account?';
+
+  @override
+  String get signUpButton => 'Sign up';
+
+  @override
+  String get signInButton => 'Sign in';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get invalidEmailError => 'Enter a valid email';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get passwordTooShortError => 'Password must be at least 6 characters';
+
+  @override
+  String get phoneLabel => 'Phone number (+33...)';
+
+  @override
+  String get invalidPhoneError => 'Enter a number in international format';
+
+  @override
+  String get sendSmsCodeButton => 'Send SMS code';
+
+  @override
+  String get smsCodeLabel => 'SMS verification code';
+
+  @override
+  String get invalidSmsCodeError => 'Enter the code received by SMS';
+
+  @override
+  String get validateCodeButton => 'Validate code';
+
+  @override
+  String get editPhoneButton => 'Edit phone number';
+
+  @override
+  String get verificationEmailSent =>
+      'A verification email has been sent to your address. Please check your inbox before logging in.';
 }

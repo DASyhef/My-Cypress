@@ -9,9 +9,15 @@ class AppTheme {
   static const double spacingSm = 8.0;
   static const double spacingMd = 12.0;
   static const double spacingLg = 16.0;
+  static const double spacingXl = 24.0;
 
   static const double borderRadiusSm = 8.0;
   static const double borderRadiusMd = 12.0;
+
+  static const double maxFormWidth = 400.0;
+
+  static const double iconSizeMd = 24.0;
+  static const double iconSizeLg = 28.0;
 
   static ThemeData get lightTheme {
     return ThemeData(

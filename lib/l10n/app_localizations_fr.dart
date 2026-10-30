@@ -147,4 +147,81 @@ class AppLocalizationsFr extends AppLocalizations {
   String invitationEmailBody(String firstName, String appUrl) {
     return 'Bonjour $firstName,\n\nVous avez été désigné comme personne de confiance sur My-Cypress.\n\nVous pouvez télécharger l\'application ou vous connecter en ligne ici : $appUrl';
   }
+
+  @override
+  String get authTitle => 'My-Cypress';
+
+  @override
+  String get authLoginSubtitle => 'Connexion à votre espace';
+
+  @override
+  String get authRegisterSubtitle => 'Création de compte';
+
+  @override
+  String get usePhoneInstead => 'Utiliser plutôt le numéro de téléphone';
+
+  @override
+  String get useEmailInstead => 'Utiliser plutôt l\'e-mail';
+
+  @override
+  String get continueWithGoogle => 'Continuer avec Google';
+
+  @override
+  String get signUpWithGoogle => 'S\'inscrire avec Google';
+
+  @override
+  String get continueWithApple => 'Continuer avec Apple';
+
+  @override
+  String get signUpWithApple => 'S\'inscrire avec Apple';
+
+  @override
+  String get noAccountYet => 'Pas encore de compte ?';
+
+  @override
+  String get alreadyHaveAccount => 'Déjà un compte ?';
+
+  @override
+  String get signUpButton => 'S\'inscrire';
+
+  @override
+  String get signInButton => 'Se connecter';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get invalidEmailError => 'Saisissez un email valide';
+
+  @override
+  String get passwordLabel => 'Mot de passe';
+
+  @override
+  String get passwordTooShortError =>
+      'Le mot de passe doit faire au moins 6 caractères';
+
+  @override
+  String get phoneLabel => 'Numéro de téléphone (+33...)';
+
+  @override
+  String get invalidPhoneError => 'Saisissez un numéro au format international';
+
+  @override
+  String get sendSmsCodeButton => 'Envoyer le code SMS';
+
+  @override
+  String get smsCodeLabel => 'Code de vérification SMS';
+
+  @override
+  String get invalidSmsCodeError => 'Saisissez le code reçu par SMS';
+
+  @override
+  String get validateCodeButton => 'Valider le code';
+
+  @override
+  String get editPhoneButton => 'Modifier le numéro';
+
+  @override
+  String get verificationEmailSent =>
+      'Un e-mail de vérification a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception avant de vous connecter.';
 }
